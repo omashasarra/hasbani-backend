@@ -16,8 +16,6 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CORS configuration
-// In server.js, update corsOptions:
 const corsOptions = {
   origin: [
     "https://hasbani-frontend-production.up.railway.app",
@@ -30,54 +28,9 @@ const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  exposedHeaders: ["Content-Range", "X-Content-Range"],
 };
 
-// Apply CORS middleware
 app.use(cors(corsOptions));
-
-// Dynamic CORS configuration
-const allowedOrigins = [
-  "https://hasbani-frontend-production.up.railway.app",
-  "https://hasbani-frontend.up.railway.app",
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        // If you want to allow any origin in development:
-        if (process.env.NODE_ENV !== "production") {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
-  );
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.sendStatus(200);
-});
 
 // JSON body parser
 app.use(express.json({ limit: "10mb" }));
@@ -148,7 +101,6 @@ app.get("/debug/image/:filename", (req, res) => {
 
 // Railway requires listening on 0.0.0.0
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
