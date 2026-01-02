@@ -36,9 +36,6 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle preflight requests
-app.options("*", cors(corsOptions));
-
 // Dynamic CORS configuration
 const allowedOrigins = [
   "https://hasbani-frontend-production.up.railway.app",
