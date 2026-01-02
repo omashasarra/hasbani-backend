@@ -18,31 +18,12 @@ const __dirname = path.dirname(__filename);
 
 // CORS configuration
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    // List of allowed origins
-    const allowedOrigins = [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:8080",
-      "http://127.0.0.1:3000",
-      // Add your Railway frontend URL when you deploy
-      // 'https://your-app.railway.app',
-    ];
-
-    if (
-      allowedOrigins.indexOf(origin) !== -1 ||
-      process.env.NODE_ENV !== "production"
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: [
+    "https://hasbani-backend-production.up.railway.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+  ],
   credentials: true,
-  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
@@ -62,6 +43,10 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 app.use("/auth", authRoutes);
 app.use("/products", productsRoutes);
 app.use("/admin", adminRoutes);
+
+app.get("/", (req, res) => {
+  res.redirect("/health");
+});
 
 // Serve uploaded files
 app.use("/uploads", express.static(UPLOADS_DIR));
