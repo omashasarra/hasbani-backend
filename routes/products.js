@@ -176,56 +176,70 @@ router.post(
   }
 );
 
-router.post(
-  "/modify/:id",
-  verifyAdmin,
-  upload.single("image"),
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { category_id, translations } = req.body;
-      const translationsData =
-        typeof translations === "string"
-          ? JSON.parse(translations)
-          : translations;
-
-      const [existing] = await db.query(
-        "SELECT image FROM products WHERE id = ?",
-        [id]
-      );
-      if (!existing.length)
-        return res.status(404).json({ message: "Product not found" });
-
-      const oldImage = existing[0].image;
-      const newImage = req.file ? req.file.filename : oldImage;
-
-      // Update product
-      await db.query(
-        "UPDATE products SET category_id = ?, image = ? WHERE id = ?",
-        [category_id, newImage, id]
-      );
-
-      // Delete old image if new one uploaded
-      if (req.file) {
-        const oldImagePath = path.join(UPLOADS_DIR, oldImage);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+const optionalUpload = (req, res, next) => {
+  if (
+    req.headers["content-type"] &&
+    req.headers["content-type"].includes("multipart/form-data")
+  ) {
+    upload.single("image")(req, res, (err) => {
+      if (err) {
+        console.error("File upload error:", err);
+        return res
+          .status(400)
+          .json({ message: "File upload error", error: err.message });
       }
-
-      // Update translations
-      for (const t of translationsData) {
-        await db.query(
-          "UPDATE product_translations SET name=?, description=? WHERE product_id=? AND language=?",
-          [t.name, t.description, id, t.language]
-        );
-      }
-
-      res.json({ message: "Product updated" });
-    } catch (err) {
-      console.error("Update Product Error:", err);
-      res.status(500).json({ message: "Database error", error: err });
-    }
+      next();
+    });
+  } else {
+    next();
   }
-);
+};
+
+router.post("/modify/:id", verifyAdmin, optionalUpload, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { category_id, translations } = req.body;
+    const translationsData =
+      typeof translations === "string"
+        ? JSON.parse(translations)
+        : translations;
+
+    const [existing] = await db.query(
+      "SELECT image FROM products WHERE id = ?",
+      [id]
+    );
+    if (!existing.length)
+      return res.status(404).json({ message: "Product not found" });
+
+    const oldImage = existing[0].image;
+    const newImage = req.file ? req.file.filename : oldImage;
+
+    // Update product
+    await db.query(
+      "UPDATE products SET category_id = ?, image = ? WHERE id = ?",
+      [category_id, newImage, id]
+    );
+
+    // Delete old image if new one uploaded
+    if (req.file) {
+      const oldImagePath = path.join(UPLOADS_DIR, oldImage);
+      if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+    }
+
+    // Update translations
+    for (const t of translationsData) {
+      await db.query(
+        "UPDATE product_translations SET name=?, description=? WHERE product_id=? AND language=?",
+        [t.name, t.description, id, t.language]
+      );
+    }
+
+    res.json({ message: "Product updated" });
+  } catch (err) {
+    console.error("Update Product Error:", err);
+    res.status(500).json({ message: "Database error", error: err });
+  }
+});
 
 router.delete("/delete/:id", verifyAdmin, async (req, res) => {
   try {
